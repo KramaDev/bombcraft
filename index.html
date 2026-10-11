@@ -62,6 +62,13 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 #over .alt{margin-top:10px}
 .bt:active{transform:scale(.96)}
 .ver{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 12px);font-size:12px;opacity:.55;letter-spacing:1.5px}
+#help{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;text-align:center;z-index:11;background:rgba(6,10,24,.9)}
+#help h2{font:900 26px system-ui,sans-serif;margin:0;letter-spacing:2px}
+#tabs{display:flex;gap:6px}
+.tab{padding:9px 13px;border-radius:12px;border:0;background:rgba(255,255,255,.14);color:#fff;font:700 13px system-ui,sans-serif}
+.tab.on{background:#00b8d4}
+#helpbody{background:rgba(255,255,255,.08);border-radius:14px;padding:14px 16px;text-align:left;width:min(88vw,360px);line-height:1.75;font-size:14px}
+#helpbody b{color:#ffe600}
 </style>
 </head>
 <body>
@@ -83,10 +90,11 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
   <button id="place">PLACE</button>
   <button id="bomb">BOMB</button>
 </div>
-<div id="menu"><h1>BOMBCRAFT</h1><p>Mine, build and blow things up. Survive the waves, pick upgrades, beat the bosses.</p><button class="bt" id="play">PLAY</button><p>Best score: <b id="mbest">0</b></p><div class="ver">v0.01</div></div>
-<div id="pausev"><h2>PAUSED</h2><button class="bt" id="resume">Resume</button><button class="bt alt" id="prestart">Restart</button><button class="bt alt" id="pmenu">Main menu</button><div class="ver">v0.01</div></div>
+<div id="menu"><h1>BOMBCRAFT</h1><p>Mine, build and blow things up. Survive the waves, pick upgrades, beat the bosses.</p><button class="bt" id="play">PLAY</button><button class="bt alt" id="how">How to play</button><p>Best score: <b id="mbest">0</b></p><div class="ver">V0.01 - vibe coded by KramaDev</div></div>
+<div id="pausev"><h2>PAUSED</h2><button class="bt" id="resume">Resume</button><button class="bt alt" id="prestart">Restart</button><button class="bt alt" id="pmenu">Main menu</button><div class="ver">V0.01 - vibe coded by KramaDev</div></div>
+<div id="help"><h2>CONTROLS</h2><div id="tabs"><button class="tab" id="t_touch">Touch</button><button class="tab" id="t_wasd">Keyboard: WASD</button><button class="tab" id="t_arrows">Keyboard: Arrows</button></div><div id="helpbody"></div><button class="bt" id="helpclose">Got it</button></div>
 <div id="pick"><h3>Choose an upgrade</h3><div id="cards"></div></div>
-<div id="over"><h2>GAME OVER</h2><div id="big">0</div><div id="newb">NEW BEST!</div><div id="stats"></div><div id="chips"></div><button id="retry">Play again</button><button class="alt" id="tomenu">Main menu</button><div class="ver"> v0.01 · vibe coded by <a href="https://github.com/KramaDev" target="_blank" rel="noopener noreferrer"> KramaDev </a> </div></div>
+<div id="over"><h2>GAME OVER</h2><div id="big">0</div><div id="newb">NEW BEST!</div><div id="stats"></div><div id="chips"></div><button id="retry">Play again</button><button class="alt" id="tomenu">Main menu</button><div class="ver">V0.01 - vibe coded by KramaDev</div></div>
 <script>
 (()=>{
 const $=id=>document.getElementById(id);
@@ -112,7 +120,7 @@ function field(r,s){const gw=Math.ceil(W/s)+2,g=Array.from({length:gw*gw},r);
 
 let P,blocks,bombs,bombList,parts,booms,regen,shake,cam={x:0,y:0};
 let enemies=[],wave=0,wphase="break",wt=0,toSpawn=0,spT=0,kills=0,over=false;
-let menu=true,paused=false,projs=[],traps=[],totems=[],booms2=[],boomT=3,totT=0,orbA=0,bspawn=false;
+let menu=true,paused=false,projs=[],traps=[],totems=[],booms2=[],boomT=3,totT=0,orbA=0,bspawn=false,pend=[];
 let up={},score=0,combo=0,comboT=0,bestCombo=0,tm=0,bombsUsed=0,hitW=false,vk=0,pt=0,best=0,pops=[];
 function gen(){
   const r=rng(Math.random()*1e9|0),n1=field(r,10),n2=field(r,4),n3=field(r,16);const th=THEMES[r()*THEMES.length|0];PAL[1]=th.g;PAL[2]=th.d;
@@ -134,7 +142,7 @@ function gen(){
   const cx=W>>1,cy=H>>1;
   for(let dy=-3;dy<=3;dy++)for(let dx=-3;dx<=3;dx++)if(dx*dx+dy*dy<=10)map[(cy+dy)*W+cx+dx]=1;
   P={x:cx+.5,y:cy+.5,fx:0,fy:1,mv:0,t:0};
-  MAXB=5;R=2;up={};blocks=12;bombs=MAXB;bombList=[];parts=[];booms=[];regen=0;shake=0;cam.x=P.x;cam.y=P.y;P.hp=5;P.inv=0;P.flash=0;enemies=[];wave=0;wphase='pick';pt=.7;wt=0;toSpawn=0;P.mhp=5;score=0;combo=0;comboT=0;bestCombo=0;tm=0;bombsUsed=0;hitW=false;vk=0;pops=[];projs=[];traps=[];totems=[];booms2=[];boomT=3;totT=0;P.slow=0;$('pick').style.display='none';resetInputs();spT=0;kills=0;over=false;flowT=0;$('over').style.display='none';hud();
+  MAXB=5;R=2;up={};blocks=12;bombs=MAXB;bombList=[];parts=[];booms=[];regen=0;shake=0;cam.x=P.x;cam.y=P.y;P.hp=5;P.inv=0;P.flash=0;enemies=[];wave=0;wphase='pick';pt=.7;wt=0;toSpawn=0;P.mhp=5;score=0;combo=0;comboT=0;bestCombo=0;tm=0;bombsUsed=0;hitW=false;vk=0;pops=[];pend=[];projs=[];traps=[];totems=[];booms2=[];boomT=3;totT=0;P.slow=0;$('pick').style.display='none';resetInputs();spT=0;kills=0;over=false;flowT=0;$('over').style.display='none';hud();
 }
 function hud(){
   $('nb').textContent=blocks;$('nbomb').textContent=bombs;$('hp').textContent=(Math.round(Math.max(0,P.hp)*10)/10)+'/'+P.mhp;$('sc').textContent=score.toLocaleString()+(combo>=4?' \u00d7'+Math.min(5,1+Math.floor(combo/4)):'');
@@ -193,7 +201,7 @@ document.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
 $('reset').addEventListener('click',()=>setPause(true));
 
 const keys={};
-addEventListener('keydown',e=>{keys[e.code]=1;if(e.code==='Space'||e.code==='KeyK'){if(!e.repeat)dropBomb()}hideHint()});
+addEventListener('keydown',e=>{keys[e.code]=1;if(e.code==='Space'||e.code==='KeyK'||e.code==='KeyC'){if(!e.repeat)dropBomb()}hideHint()});
 addEventListener('keyup',e=>{keys[e.code]=0});
 
 // ---------- actions ----------
@@ -256,7 +264,7 @@ function update(dt){
   const sp=Math.hypot(ix,iy);P.mv+=((sp>0?1:0)-P.mv)*Math.min(1,dt*12);P.t+=dt;
   if(sp>.15){if(Math.abs(ix)>Math.abs(iy)){P.fx=ix>0?1:-1;P.fy=0}else{P.fy=iy>0?1:-1;P.fx=0}}
   cd-=dt;
-  if(cd<=0&&!over){if(held.mine||keys.KeyJ){mine();cd=.16*Math.pow(.75,up.hands||0)}else if(held.place||keys.KeyL){place();cd=.16*Math.pow(.75,up.hands||0)}}
+  if(cd<=0&&!over){if(held.mine||keys.KeyJ||keys.KeyZ){mine();cd=.16*Math.pow(.75,up.hands||0)}else if(held.place||keys.KeyL||keys.KeyX){place();cd=.16*Math.pow(.75,up.hands||0)}}
   for(let i=bombList.length-1;i>=0;i--){const b=bombList[i];b.t-=dt;if(b.t<=0){bombList.splice(i,1);explode(b)}}
   if(bombs<MAXB){regen+=dt;if(regen>=4*Math.pow(.75,up.regen||0)){regen=0;bombs++;hud()}}else regen=0;
   for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.l-=dt;if(p.l<=0){parts.splice(i,1);continue}
@@ -276,9 +284,12 @@ const ET={
   tele:{sp:2.2,hp:2,hs:.3,c:'#00e5ff',d:'#00606b'},
   ghost:{sp:2.6,hp:2,hs:.28,c:'#cfd8dc',d:'#37474f'},
   trapper:{sp:2,hp:2,hs:.3,c:'#ff9100',d:'#7a3d00'},
-  boss:{sp:1.3,hp:30,hs:.55,c:'#c2185b',d:'#4a0a2a'}
+  boss:{sp:1.3,hp:30,hs:.55,c:'#c2185b',d:'#4a0a2a'},
+  hydra:{sp:1.9,hp:4,hs:.38,c:'#26a69a',d:'#004d40'},
+  pup:{sp:3.2,hp:1,hs:.2,c:'#9ccc65',d:'#33691e'},
+  monk:{sp:3.4,hp:2,hs:.28,c:'#ff8f00',d:'#6d3a00'}
 };
-const SPW=[['grunt',1,10],['runner',2,4],['brute',3,3],['wizard',4,3],['ghost',5,2],['trapper',6,2],['tele',7,3]];
+const SPW=[['grunt',1,10],['runner',2,4],['brute',3,3],['wizard',4,3],['ghost',5,2],['trapper',6,2],['tele',7,3],['hydra',6,3],['monk',8,3]];
 const flow=new Int16Array(W*H),bq=new Int32Array(W*H);let flowT=0;
 function hitS(x,y,s){return solid(Math.floor(x-s),Math.floor(y-s))||solid(Math.floor(x+s),Math.floor(y-s))||solid(Math.floor(x-s),Math.floor(y+s))||solid(Math.floor(x+s),Math.floor(y+s))}
 function open8(cx,cy,dx,dy){return !solid(cx+dx,cy+dy)&&!(dx&&dy&&(solid(cx+dx,cy)||solid(cx,cy+dy)))}
@@ -296,7 +307,7 @@ function pickKind(){
 }
 function mk(k,x,y){
   const T=ET[k],mh=Math.ceil(T.hp*(1+.05*wave+.5*Math.floor(wave/15)));
-  const e={k,T,x,y,hp:mh,mhp:mh,vx:0,vy:0,kx:0,ky:0,hit:0,age:0,bash:0,ex:0,ey:1,ph:Math.random()*6,cw:1+Math.random()*2,act:null,pt:2,at:0,rg:k==='wizard'||k==='trapper'};
+  const e={k,T,x,y,hp:mh,mhp:mh,vx:0,vy:0,kx:0,ky:0,hit:0,age:0,bash:0,ex:0,ey:1,ph:Math.random()*6,cw:1+Math.random()*2,act:null,pt:2,at:0,rg:k==='wizard',dir:Math.random()<.5?1:-1};
   enemies.push(e);return e;
 }
 function spawnEnemy(){
@@ -313,8 +324,13 @@ function shoot(x,y,dx,dy,sp,dmg,col){const d=Math.hypot(dx,dy)||1;projs.push({x,
 function behave(e,dt,pd){
   e.cw-=dt;
   if(e.k==='wizard'){if(e.cw<=0&&pd<11){e.cw=2.2;shoot(e.x,e.y,P.x-e.x,P.y-e.y,5,edmg(),'#c77dff')}}
-  else if(e.k==='trapper'){if(e.cw<=0&&pd<11&&traps.length<16){e.cw=3.2;const tx=Math.floor(P.x+(P.lx||0)*1.3),ty=Math.floor(P.y+(P.ly||0)*1.3);if(!solid(tx,ty))traps.push({x:tx+.5,y:ty+.5,t:12})}}
-  else if(e.k==='tele'){
+  else if(e.k==='trapper'){if(e.cw<=0&&pd<9&&traps.length<10){e.cw=2.2;const tx=Math.floor(e.x)+(Math.random()*3|0)-1,ty=Math.floor(e.y)+(Math.random()*3|0)-1;if(!solid(tx,ty)&&!traps.some(q=>Math.floor(q.x)===tx&&Math.floor(q.y)===ty))traps.push({x:tx+.5,y:ty+.5,t:9})}}
+  else if(e.k==='monk'){
+    e.fl=(e.fl||0)-dt;if(e.fl<=0){e.fl=3+Math.random()*3;e.dir*=-1}
+    if(e.cw<=0&&pd<11){e.sh=(e.sh||0)+1;e.sa=(e.sa||Math.random()*6.283)+.85;
+      shoot(e.x,e.y,Math.cos(e.sa),Math.sin(e.sa),3.6,edmg(),'#ffd54f');shoot(e.x,e.y,-Math.cos(e.sa),-Math.sin(e.sa),3.6,edmg(),'#ffd54f');
+      e.cw=e.sh>=5?(e.sh=0,3.2):.2}
+  }else if(e.k==='tele'){
     if(e.cw<=0&&pd>3.5){e.cw=3+Math.random()*1.5;
       for(let i=0;i<14;i++){const a=Math.random()*6.283,r=2.5+Math.random()*1.5,nx=P.x+Math.cos(a)*r,ny=P.y+Math.sin(a)*r;
         if(!hitS(nx,ny,e.T.hs)&&flow[Math.floor(ny)*W+Math.floor(nx)]>=0){burst(e.x,e.y,e.T.c,10,4);e.x=nx;e.y=ny;e.age=0;burst(nx,ny,e.T.c,10,4);break}}}
@@ -361,7 +377,7 @@ function updateExtras(dt){
     if(solid(Math.floor(q.x),Math.floor(q.y))){q.l=0;burst(q.x,q.y,q.col,3,2)}
     else if(Math.hypot(q.x-P.x,q.y-P.y)<.38){q.l=0;hurtPlayer(q.dmg)}}
   projs=projs.filter(q=>q.l>0);
-  for(const t of traps){t.t-=dt;if(Math.hypot(t.x-P.x,t.y-P.y)<.5){t.t=0;P.slow=2.5;burst(t.x,t.y,'#ff9100',8,2)}}
+  for(const t of traps){t.t-=dt;if(Math.hypot(t.x-P.x,t.y-P.y)<.5){t.t=0;P.slow=2;burst(t.x,t.y,'#ff9100',8,2)}}
   traps=traps.filter(t=>t.t>0);
   for(const t of totems){t.t-=dt;t.k-=dt;
     if(t.k<=0){t.k=1;if(Math.hypot(t.x-P.x,t.y-P.y)<2.2&&P.hp<P.mhp){P.hp=Math.min(P.mhp,P.hp+.5+.25*((up.totem||1)-1));burst(P.x,P.y,'#69f0ae',6,2);hud()}}}
@@ -406,7 +422,7 @@ function drawExtrasOver(sx,sy,now){
 function hurtEnemy(e,dmg,dx,dy){
   if(e.hit>0||e.dead)return;const d=Math.hypot(dx,dy)||1;
   e.hp-=dmg;e.hit=.25;const kb=e.k==='boss'?1.2:9;e.kx=dx/d*kb;e.ky=dy/d*kb;burst(e.x,e.y,e.T.c,6,3);
-  if(e.hp<=0){e.dead=true;kills++;onKill(e);burst(e.x,e.y,e.T.c,16,5);burst(e.x,e.y,'#fff',5,3)}
+  if(e.hp<=0){e.dead=true;kills++;onKill(e);if(e.k==='hydra')for(let i=0;i<2;i++)pend.push({k:'pup',x:e.x+(i?.4:-.4),y:e.y,ox:e.x,oy:e.y});burst(e.x,e.y,e.T.c,16,5);burst(e.x,e.y,'#fff',5,3)}
 }
 function hurtPlayer(n){
   if(P.inv>0||over)return;
@@ -435,6 +451,7 @@ function updateEnemies(dt){
     let dx=tx-e.x,dy=ty-e.y;const pd0=Math.hypot(P.x-e.x,P.y-e.y);
     behave(e,dt,pd0);
     if(e.rg){if(pd0<5){dx=e.x-P.x;dy=e.y-P.y}else if(pd0<7){dx=0;dy=0}}
+    if(e.k==='monk'){const rx=(P.x-e.x)/(pd0||1),ry=(P.y-e.y)/(pd0||1);dx=-ry*e.dir*3+rx*(pd0-5);dy=rx*e.dir*3+ry*(pd0-5)}
     if(e.k==='boss'&&e.act){if(e.act==='charge'&&e.at>.7){dx=e.cx;dy=e.cy}else{dx=0;dy=0}}
     const d=Math.hypot(dx,dy)||1;
     const spd=T.sp*(1+Math.min(wave,10)*.03)*Math.min(1,e.age*3)*(e.slow>0?.45:1)*(e.k==='boss'&&e.act==='charge'&&e.at>.7?4.5:1);
@@ -468,7 +485,9 @@ function updateWaves(dt){
   if(over)return;
   updateEnemies(dt);
   updateExtras(dt);
-  const n=enemies.length;enemies=enemies.filter(e=>!e.dead);if(enemies.length!==n)hud();
+  const n=enemies.length;enemies=enemies.filter(e=>!e.dead);const pc=pend.length;
+  for(const q of pend){const ok=!hitS(q.x,q.y,.22),m=mk(q.k,ok?q.x:q.ox,ok?q.y:q.oy);m.kx=(q.x-q.ox)*10}
+  pend=[];if(enemies.length!==n||pc)hud();
   if(wphase==='pick'){if(pt>0){pt-=dt;if(pt<=0)showPick()}return}
   if(wphase==='break'){
     wt-=dt;
@@ -516,6 +535,18 @@ function drawEnemies(sx,sy){
     else if(k==='ghost'){const r=s*.55*pul;ctx.beginPath();ctx.arc(0,0,r,0,6.283);ctx.fill();ctx.stroke();tint();eyes(r,-r*.15);top=r}
     else if(k==='trapper'){const r=s*.6*pul;poly(5,r,-1.571);ctx.fill();ctx.stroke();tint();
       ctx.strokeStyle='#ffe0b2';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,r*.18,r*.3,0,6.283);ctx.stroke();eyes(r*.8,-r*.2);top=r}
+    else if(k==='hydra'){const r=s*.5*pul;ctx.beginPath();ctx.arc(0,r*.15,r,0,6.283);ctx.fill();ctx.stroke();tint();
+      for(let i=0;i<3;i++){const a=-1.571+(i-1)*.95,hx=Math.cos(a)*r*.95,hy=Math.sin(a)*r*.95+r*.1+Math.sin(e.ph+e.age*6+i)*r*.08;
+        ctx.fillStyle=fl?'#fff':T.c;ctx.beginPath();ctx.arc(hx,hy,r*.42,0,6.283);ctx.fill();ctx.stroke();
+        ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(hx,hy-r*.05,r*.14,0,6.283);ctx.fill();
+        ctx.fillStyle='#111';ctx.beginPath();ctx.arc(hx+e.ex*r*.05,hy-r*.05+e.ey*r*.05,r*.07,0,6.283);ctx.fill()}
+      top=r*1.5}
+    else if(k==='monk'){const r=s*.5*pul;ctx.beginPath();ctx.arc(0,r*.12,r,0,6.283);ctx.fill();ctx.stroke();tint();
+      ctx.fillStyle=fl?'#fff':'#ffcc80';ctx.beginPath();ctx.arc(0,-r*.55,r*.42,0,6.283);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#111';ctx.fillRect(-r*.22,-r*.6,r*.14,r*.1);ctx.fillRect(r*.08,-r*.6,r*.14,r*.1);
+      ctx.strokeStyle='rgba(255,213,79,.85)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,-r*1.05,r*.35,0,6.283);ctx.stroke();
+      ctx.fillStyle='#ffd54f';for(let i=0;i<3;i++){const a=e.age*5+i*2.094;ctx.beginPath();ctx.arc(Math.cos(a)*r*1.3,Math.sin(a)*r*1.3,r*.14,0,6.283);ctx.fill()}
+      top=r*1.5}
     else if(k==='boss'){const r=s*.45*pul,rt=e.age*.6;
       ctx.rotate(rt);ctx.beginPath();for(let i=0;i<20;i++){const q=i%2?r*.8:r*1.18,a=i*Math.PI/10;ctx.lineTo(Math.cos(a)*q,Math.sin(a)*q)}
       ctx.closePath();ctx.fill();ctx.stroke();tint();ctx.rotate(-rt);
@@ -567,7 +598,7 @@ function showPick(){resetInputs();
 }
 function onKill(e){
   combo++;comboT=3;if(combo>bestCombo)bestCombo=combo;
-  const pts=Math.round(({grunt:10,runner:20,brute:50,wizard:35,ghost:40,trapper:35,tele:40,boss:500+wave*20})[e.k]*Math.min(5,1+Math.floor(combo/4))*(1+.5*(up.greed||0)+.1*(up.overdrive||0)));
+  const pts=Math.round(({hydra:45,monk:45,pup:5,grunt:10,runner:20,brute:50,wizard:35,ghost:40,trapper:35,tele:40,boss:500+wave*20})[e.k]*Math.min(5,1+Math.floor(combo/4))*(1+.5*(up.greed||0)+.1*(up.overdrive||0)));
   score+=pts;pops.push({x:e.x,y:e.y,t:0,s:'+'+pts});
   if(e.k==='boss'){banner('BOSS DEFEATED!');shake=.8;burst(e.x,e.y,'#ffd600',40,7)}
   if(up.vamp&&++vk>=Math.max(5,15-3*up.vamp)){vk=0;if(P.hp<P.mhp){P.hp++;burst(P.x,P.y,'#ff4d6d',8,3)}}
@@ -591,6 +622,17 @@ function showMenu(){menu=true;paused=false;gen();$('pausev').style.display='none
 $('play').addEventListener('click',()=>{menu=false;paused=false;gen();$('menu').style.display='none'});
 $('resume').addEventListener('click',()=>setPause(false));
 $('prestart').addEventListener('click',()=>{paused=false;$('pausev').style.display='none';gen()});
+const KS={
+ touch:['<b>Move:</b> drag on the left half of the screen','<b>MINE:</b> hold to dig blocks or hit enemies','<b>PLACE:</b> hold to build a block','<b>BOMB:</b> drops a bomb (2s fuse)','<b>Pause:</b> button top-right'],
+ wasd:['<b>Move:</b> W A S D','<b>Mine / hit:</b> J (hold)','<b>Place block:</b> L (hold)','<b>Bomb:</b> K or Space','<b>Pause:</b> P or Esc'],
+ arrows:['<b>Move:</b> Arrow keys','<b>Mine / hit:</b> Z (hold)','<b>Place block:</b> X (hold)','<b>Bomb:</b> C or Space','<b>Pause:</b> P or Esc']};
+function helpTab(k){$('helpbody').innerHTML=KS[k].map(t=>'<div>'+t+'</div>').join('')+'<div style="opacity:.7;margin-top:6px">Goal: survive the waves, pick upgrades, beat the boss every 10th wave. Obsidian can\'t be broken.</div>';
+  for(const t in KS)$('t_'+t).classList[t===k?'add':'remove']('on')}
+function openHelp(){helpTab('ontouchstart' in window?'touch':'wasd');$('help').style.display='flex'}
+for(const t in KS)$('t_'+t).addEventListener('click',()=>helpTab(t));
+$('how').addEventListener('click',openHelp);
+$('helpclose').addEventListener('click',()=>{$('help').style.display='none';try{localStorage.setItem('bb_tut','1')}catch(e){}});
+try{if(!localStorage.getItem('bb_tut'))openHelp()}catch(e){openHelp()}
 $('pmenu').addEventListener('click',showMenu);$('tomenu').addEventListener('click',showMenu);
 addEventListener('keydown',e=>{if(e.code==='Escape'||e.code==='KeyP')setPause(!paused)});
 document.addEventListener('visibilitychange',()=>{if(document.hidden)setPause(true)});
